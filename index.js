@@ -1,25 +1,23 @@
 const express = require("express");
+const listViewRouter = require("./list-view-router");
+const listEditRouter = require("./list-edit-router");
 
 const app = express();
 const PORT = 3000;
 
-// Ruta principal
-app.get("/tasks", (req, res) => {
-  const tasks = [
-    {
-      id: 123456,
-      isCompleted: false,
-      description: "Walk the dog",
-    },
-    {
-      id: 789012,
-      isCompleted: true,
-      description: "Do homework",
-    },
-  ];
+app.use(express.json());
 
-  res.json(tasks);
+const allowedMethods = new Set(["GET", "POST", "PUT", "DELETE"]);
+app.use((req, res, next) => {
+  if (!allowedMethods.has(req.method)) {
+    return res.status(400).json({ error: "Metodo HTTP no valido" });
+  }
+
+  next();
 });
+
+app.use("/tasks", listViewRouter);
+app.use("/tasks", listEditRouter);
 
 // Iniciar servidor
 app.listen(PORT, () => {

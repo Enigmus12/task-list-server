@@ -2,13 +2,61 @@ const express = require("express");
 const router = express.Router();
 const tasks = require("./tasks-db");
 
-// POST - Crear una nueva tarea
-router.post("/", (req, res) => {
+const isEmptyBody = (body) => !body || Object.keys(body).length === 0;
+
+const validatePostBody = (req, res, next) => {
+  if (isEmptyBody(req.body)) {
+    return res.status(400).json({ error: "Cuerpo vacio" });
+  }
+
   const { description, isCompleted } = req.body;
 
-  if (!description) {
-    return res.status(400).json({ error: 'El campo "description" es requerido' });
+  if (typeof description !== "string" || description.trim() === "") {
+    return res
+      .status(400)
+      .json({ error: 'El campo "description" es requerido y debe ser texto' });
   }
+
+  if (isCompleted !== undefined && typeof isCompleted !== "boolean") {
+    return res
+      .status(400)
+      .json({ error: 'El campo "isCompleted" debe ser booleano' });
+  }
+
+  next();
+};
+
+const validatePutBody = (req, res, next) => {
+  if (isEmptyBody(req.body)) {
+    return res.status(400).json({ error: "Cuerpo vacio" });
+  }
+
+  const { description, isCompleted } = req.body;
+
+  if (description === undefined && isCompleted === undefined) {
+    return res.status(400).json({ error: "Atributos faltantes" });
+  }
+
+  if (description !== undefined) {
+    if (typeof description !== "string" || description.trim() === "") {
+      return res
+        .status(400)
+        .json({ error: 'El campo "description" debe ser texto' });
+    }
+  }
+
+  if (isCompleted !== undefined && typeof isCompleted !== "boolean") {
+    return res
+      .status(400)
+      .json({ error: 'El campo "isCompleted" debe ser booleano' });
+  }
+
+  next();
+};
+
+// POST - Crear una nueva tarea
+router.post("/", validatePostBody, (req, res) => {
+  const { description, isCompleted } = req.body;
 
   const newTask = {
     id: Date.now(),
@@ -37,7 +85,7 @@ router.delete("/:id", (req, res) => {
 });
 
 // PUT - Actualizar una tarea específica
-router.put("/:id", (req, res) => {
+router.put("/:id", validatePutBody, (req, res) => {
   const taskId = parseInt(req.params.id);
   const task = tasks.find((t) => t.id === taskId);
 
